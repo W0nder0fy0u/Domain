@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hakari's Idle Death Gamble</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial Black', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a0a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background particles */
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(0, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 8s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(50px);
+                opacity: 0;
+            }
+        }
+
+        .game-container {
+            background: rgba(10, 10, 30, 0.9);
+            border: 3px solid #00ffff;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.5), 
+                        inset 0 0 30px rgba(0, 255, 255, 0.1);
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            max-width: 800px;
+            width: 90%;
+        }
+
+        .title {
+            font-size: 2.5em;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            margin-bottom: 10px;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            }
+            50% {
+                text-shadow: 0 0 30px #00ffff, 0 0 60px #00ffff, 0 0 80px #ff00ff;
+            }
+        }
+
+        .subtitle {
+            color: #ff00ff;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #ff00ff;
+        }
+
+        .slot-machine {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .reel {
+            background: linear-gradient(180deg, #1a1a3e 0%, #0a0a1a 100%);
+            border: 3px solid #00ffff;
+            border-radius: 15px;
+            width: 140px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5em;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3),
+                        inset 0 0 20px rgba(0, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reel-content {
+            transition: transform 0.1s linear;
+        }
+
+        .reel.spinning .reel-content {
+            animation: spin 0.1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: translateY(0); }
+            to { transform: translateY(-100%); }
+        }
+
+        .controls {
+            margin: 30px 0;
+        }
+
+        .spin-button {
+            background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+            border: none;
+            padding: 20px 60px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .spin-button:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 0 50px rgba(255, 0, 255, 0.8);
+        }
+
+        .spin-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            gap: 20px;
+        }
+
+        .stat-box {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            padding: 15px 25px;
+            flex: 1;
+        }
+
+        .stat-label {
+            color: #00ffff;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #ff00ff;
+            font-size: 1.8em;
+            font-weight: bold;
+            text-shadow: 0 0 10px #ff00ff;
+        }
+
+        .message {
+            margin-top: 20px;
+            font-size: 1.3em;
+            color: #00ffff;
+            min-height: 40px;
+            text-shadow: 0 0 10px #00ffff;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Jackpot overlay */
+        .jackpot-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: overlayFadeIn 0.5s;
+        }
+
+        @keyframes overlayFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .jackpot-overlay.active {
+            display: flex;
+        }
+
+        .jackpot-content {
+            text-align: center;
+            position: relative;
+        }
+
+        .jackpot-title {
+            font-size: 5em;
+            color: #00ffff;
+            text-shadow: 0 0 30px #00ffff, 0 0 60px #ff00ff;
+            margin-bottom: 30px;
+            animation: jackpotPulse 0.5s infinite alternate;
+        }
+
+        @keyframes jackpotPulse {
+            from {
+                transform: scale(1);
+                text-shadow: 0 0 30px #00ffff, 0 0 60px #ff00ff;
+            }
+            to {
+                transform: scale(1.1);
+                text-shadow: 0 0 50px #00ffff, 0 0 100px #ff00ff, 0 0 150px #00ffff;
+            }
+        }
+
+        .video-container {
+            margin: 20px auto;
+            border: 5px solid #00ffff;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.8);
+            overflow: hidden;
+        }
+
+        .close-button {
+            margin-top: 30px;
+            background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+            transition: all 0.3s;
+        }
+
+        .close-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 50px rgba(255, 0, 255, 0.8);
+        }
+
+        /* Confetti animation */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #00ffff;
+            animation: confettiFall 3s linear infinite;
+        }
+
+        @keyframes confettiFall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .win-animation {
+            animation: winPulse 0.5s;
+        }
+
+        @keyframes winPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 1.8em;
+            }
+            
+            .reel {
+                width: 100px;
+                height: 140px;
+                font-size: 3.5em;
+            }
+            
+            .spin-button {
+                padding: 15px 40px;
+                font-size: 1.2em;
+            }
+            
+            .jackpot-title {
+                font-size: 3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background particles -->
+    <script>
+        for(let i = 0; i < 30; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 8 + 's';
+            particle.style.animationDuration = (Math.random() * 5 + 5) + 's';
+            document.body.appendChild(particle);
+        }
+    </script>
+
+    <div class="game-container">
+        <h1 class="title">🎰 IDLE DEATH GAMBLE 🎰</h1>
+        <p class="subtitle">Hakari's Domain Expansion</p>
+
+        <div class="slot-machine">
+            <div class="reel" id="reel1">
+                <div class="reel-content">🎰</div>
+            </div>
+            <div class="reel" id="reel2">
+                <div class="reel-content">🎰</div>
+            </div>
+            <div class="reel" id="reel3">
+                <div class="reel-content">🎰</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="spin-button" id="spinButton">SPIN!</button>
+        </div>
+
+        <div class="message" id="message">Press SPIN to test your luck!</div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">SPINS</div>
+                <div class="stat-value" id="spins">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">JACKPOTS</div>
+                <div class="stat-value" id="jackpots">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">WIN RATE</div>
+                <div class="stat-value" id="winRate">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="jackpot-overlay" id="jackpotOverlay">
+        <div class="jackpot-content">
+            <div class="jackpot-title">🎊 JACKPOT! 🎊</div>
+            <div class="video-container">
+                <iframe id="ytPlayer" width="560" height="315" 
+                    src="" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+            <button class="close-button" id="closeButton">CONTINUE</button>
+        </div>
+    </div>
+
+    <script>
+        const symbols = ['🎰', '💎', '🔥', '⚡', '🌟', '💰', '🎯'];
+        const jackpotSymbol = '💎';
+        
+        let spins = 0;
+        let jackpots = 0;
+        let isSpinning = false;
+
+        const reel1 = document.getElementById('reel1');
+        const reel2 = document.getElementById('reel2');
+        const reel3 = document.getElementById('reel3');
+        const spinButton = document.getElementById('spinButton');
+        const message = document.getElementById('message');
+        const jackpotOverlay = document.getElementById('jackpotOverlay');
+        const closeButton = document.getElementById('closeButton');
+        const ytPlayer = document.getElementById('ytPlayer');
+
+        function getRandomSymbol() {
+            return symbols[Math.floor(Math.random() * symbols.length)];
+        }
+
+        function updateStats() {
+            document.getElementById('spins').textContent = spins;
+            document.getElementById('jackpots').textContent = jackpots;
+            const winRate = spins > 0 ? ((jackpots / spins) * 100).toFixed(1) : 0;
+            document.getElementById('winRate').textContent = winRate + '%';
+        }
+
+        function createConfetti() {
+            for(let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = -10 + 'px';
+                    confetti.style.background = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00'][Math.floor(Math.random() * 4)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
+        function showJackpot() {
+            // Set YouTube video to autoplay
+            ytPlayer.src = 'https://www.youtube.com/embed/npCNhJktWDE?autoplay=1&start=0';
+            jackpotOverlay.classList.add('active');
+            createConfetti();
+        }
+
+        function hideJackpot() {
+            jackpotOverlay.classList.remove('active');
+            ytPlayer.src = ''; // Stop video
+        }
+
+        async function spin() {
+            if(isSpinning) return;
+            
+            isSpinning = true;
+            spinButton.disabled = true;
+            spins++;
+            message.textContent = 'Spinning...';
+
+            // Add spinning class
+            reel1.classList.add('spinning');
+            reel2.classList.add('spinning');
+            reel3.classList.add('spinning');
+
+            // Animate symbols changing
+            let spinCount = 0;
+            const spinInterval = setInterval(() => {
+                reel1.querySelector('.reel-content').textContent = getRandomSymbol();
+                reel2.querySelector('.reel-content').textContent = getRandomSymbol();
+                reel3.querySelector('.reel-content').textContent = getRandomSymbol();
+                spinCount++;
+            }, 100);
+
+            // Stop reels one by one
+            const result1 = Math.random() < 0.33 ? jackpotSymbol : getRandomSymbol();
+            setTimeout(() => {
+                reel1.classList.remove('spinning');
+                reel1.querySelector('.reel-content').textContent = result1;
+            }, 1000);
+
+            const result2 = result1 === jackpotSymbol && Math.random() < 0.5 ? jackpotSymbol : getRandomSymbol();
+            setTimeout(() => {
+                reel2.classList.remove('spinning');
+                reel2.querySelector('.reel-content').textContent = result2;
+            }, 1500);
+
+            const result3 = result1 === jackpotSymbol && result2 === jackpotSymbol && Math.random() < 0.7 ? jackpotSymbol : getRandomSymbol();
+            setTimeout(() => {
+                clearInterval(spinInterval);
+                reel3.classList.remove('spinning');
+                reel3.querySelector('.reel-content').textContent = result3;
+
+                // Check for win
+                if(result1 === result2 && result2 === result3) {
+                    if(result1 === jackpotSymbol) {
+                        jackpots++;
+                        message.textContent = '🎊 JACKPOT!!! DOMAIN EXPANSION ACTIVATED! 🎊';
+                        reel1.classList.add('win-animation');
+                        reel2.classList.add('win-animation');
+                        reel3.classList.add('win-animation');
+                        setTimeout(() => {
+                            reel1.classList.remove('win-animation');
+                            reel2.classList.remove('win-animation');
+                            reel3.classList.remove('win-animation');
+                        }, 500);
+                        setTimeout(() => showJackpot(), 500);
+                    } else {
+                        message.textContent = '✨ Nice! Three ' + result1 + '!';
+                    }
+                } else if(result1 === result2 || result2 === result3 || result1 === result3) {
+                    message.textContent = '👍 Two matching! Almost there!';
+                } else {
+                    message.textContent = 'Try again! The house always wins... or does it?';
+                }
+
+                updateStats();
+                isSpinning = false;
+                spinButton.disabled = false;
+            }, 2000);
+        }
+
+        spinButton.addEventListener('click', spin);
+        closeButton.addEventListener('click', hideJackpot);
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if(e.code === 'Space' && !isSpinning) {
+                e.preventDefault();
+                spin();
+            }
+        });
+    </script>
+</body>
+</html>
