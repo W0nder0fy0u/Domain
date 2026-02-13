@@ -194,18 +194,27 @@
             to { opacity: 1; }
         }
 
-        /* Jackpot overlay */
+        /* Jackpot countdown indicator */
+        .jackpot-countdown {
+            margin-top: 15px;
+            font-size: 1.1em;
+            color: #ffff00;
+            text-shadow: 0 0 10px #ffff00;
+            font-weight: bold;
+        }
+
+        /* Fullscreen Jackpot overlay */
         .jackpot-overlay {
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.98);
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 10000;
             animation: overlayFadeIn 0.5s;
         }
 
@@ -221,6 +230,12 @@
         .jackpot-content {
             text-align: center;
             position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         .jackpot-title {
@@ -229,43 +244,65 @@
             text-shadow: 0 0 30px #00ffff, 0 0 60px #ff00ff;
             margin-bottom: 30px;
             animation: jackpotPulse 0.5s infinite alternate;
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10001;
         }
 
         @keyframes jackpotPulse {
             from {
-                transform: scale(1);
+                transform: translateX(-50%) scale(1);
                 text-shadow: 0 0 30px #00ffff, 0 0 60px #ff00ff;
             }
             to {
-                transform: scale(1.1);
+                transform: translateX(-50%) scale(1.1);
                 text-shadow: 0 0 50px #00ffff, 0 0 100px #ff00ff, 0 0 150px #00ffff;
             }
         }
 
         .video-container {
-            margin: 20px auto;
-            border: 5px solid #00ffff;
-            border-radius: 20px;
-            box-shadow: 0 0 50px rgba(0, 255, 255, 0.8);
-            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        #jackpotVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         .close-button {
-            margin-top: 30px;
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
             background: linear-gradient(135deg, #ff00ff 0%, #00ffff 100%);
             border: none;
-            padding: 15px 40px;
-            font-size: 1.2em;
+            padding: 20px 50px;
+            font-size: 1.5em;
             font-weight: bold;
             color: white;
             border-radius: 50px;
             cursor: pointer;
             box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
             transition: all 0.3s;
+            z-index: 10001;
+            display: none;
+        }
+
+        .close-button.show {
+            display: block;
         }
 
         .close-button:hover {
-            transform: scale(1.1);
+            transform: translateX(-50%) scale(1.1);
             box-shadow: 0 0 50px rgba(255, 0, 255, 0.8);
         }
 
@@ -312,8 +349,41 @@
             }
             
             .jackpot-title {
-                font-size: 3em;
+                font-size: 2.5em;
+                top: 20px;
             }
+
+            .close-button {
+                bottom: 30px;
+                padding: 15px 40px;
+                font-size: 1.2em;
+            }
+        }
+
+        /* Skip video button */
+        .skip-button {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid #00ffff;
+            padding: 10px 20px;
+            font-size: 1em;
+            color: #00ffff;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 10001;
+            display: none;
+        }
+
+        .skip-button.show {
+            display: block;
+        }
+
+        .skip-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -351,6 +421,7 @@
         </div>
 
         <div class="message" id="message">Press SPIN to test your luck!</div>
+        <div class="jackpot-countdown" id="countdown"></div>
 
         <div class="stats">
             <div class="stat-box">
@@ -371,14 +442,12 @@
     <div class="jackpot-overlay" id="jackpotOverlay">
         <div class="jackpot-content">
             <div class="jackpot-title">🎊 JACKPOT! 🎊</div>
+            <button class="skip-button" id="skipButton">Skip Video ⏭️</button>
             <div class="video-container">
-                <iframe id="ytPlayer" width="560" height="315" 
-                    src="" 
-                    title="YouTube video player" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen>
-                </iframe>
+                <video id="jackpotVideo" controls>
+                    <source src="hahakari.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
             </div>
             <button class="close-button" id="closeButton">CONTINUE</button>
         </div>
@@ -391,15 +460,18 @@
         let spins = 0;
         let jackpots = 0;
         let isSpinning = false;
+        let spinsUntilJackpot = 4; // Jackpot guaranteed after 4 spins
 
         const reel1 = document.getElementById('reel1');
         const reel2 = document.getElementById('reel2');
         const reel3 = document.getElementById('reel3');
         const spinButton = document.getElementById('spinButton');
         const message = document.getElementById('message');
+        const countdown = document.getElementById('countdown');
         const jackpotOverlay = document.getElementById('jackpotOverlay');
         const closeButton = document.getElementById('closeButton');
-        const ytPlayer = document.getElementById('ytPlayer');
+        const skipButton = document.getElementById('skipButton');
+        const jackpotVideo = document.getElementById('jackpotVideo');
 
         function getRandomSymbol() {
             return symbols[Math.floor(Math.random() * symbols.length)];
@@ -412,8 +484,16 @@
             document.getElementById('winRate').textContent = winRate + '%';
         }
 
+        function updateCountdown() {
+            if (spinsUntilJackpot > 0) {
+                countdown.textContent = `🎯 ${spinsUntilJackpot} spin${spinsUntilJackpot > 1 ? 's' : ''} until GUARANTEED JACKPOT!`;
+            } else {
+                countdown.textContent = '⚡ JACKPOT READY! ⚡';
+            }
+        }
+
         function createConfetti() {
-            for(let i = 0; i < 50; i++) {
+            for(let i = 0; i < 100; i++) {
                 setTimeout(() => {
                     const confetti = document.createElement('div');
                     confetti.className = 'confetti';
@@ -424,20 +504,56 @@
                     document.body.appendChild(confetti);
                     
                     setTimeout(() => confetti.remove(), 3000);
-                }, i * 30);
+                }, i * 15);
             }
         }
 
         function showJackpot() {
-            // Set YouTube video to autoplay
-            ytPlayer.src = 'https://www.youtube.com/embed/npCNhJktWDE?autoplay=1&start=0';
             jackpotOverlay.classList.add('active');
             createConfetti();
+            
+            // Play video
+            jackpotVideo.currentTime = 0;
+            jackpotVideo.play().catch(err => {
+                console.log('Autoplay prevented:', err);
+            });
+
+            // Show skip button after 3 seconds
+            setTimeout(() => {
+                skipButton.classList.add('show');
+            }, 3000);
+
+            // Show close button when video ends
+            jackpotVideo.onended = () => {
+                closeButton.classList.add('show');
+            };
+
+            // Try to go fullscreen
+            if (jackpotVideo.requestFullscreen) {
+                jackpotVideo.requestFullscreen().catch(err => {
+                    console.log('Fullscreen not supported:', err);
+                });
+            } else if (jackpotVideo.webkitRequestFullscreen) {
+                jackpotVideo.webkitRequestFullscreen();
+            } else if (jackpotVideo.msRequestFullscreen) {
+                jackpotVideo.msRequestFullscreen();
+            }
         }
 
         function hideJackpot() {
             jackpotOverlay.classList.remove('active');
-            ytPlayer.src = ''; // Stop video
+            jackpotVideo.pause();
+            closeButton.classList.remove('show');
+            skipButton.classList.remove('show');
+            
+            // Exit fullscreen if in fullscreen
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+            
+            // Reset jackpot counter
+            spinsUntilJackpot = 4;
+            updateCountdown();
         }
 
         async function spin() {
@@ -446,6 +562,7 @@
             isSpinning = true;
             spinButton.disabled = true;
             spins++;
+            spinsUntilJackpot--;
             message.textContent = 'Spinning...';
 
             // Add spinning class
@@ -454,28 +571,29 @@
             reel3.classList.add('spinning');
 
             // Animate symbols changing
-            let spinCount = 0;
             const spinInterval = setInterval(() => {
                 reel1.querySelector('.reel-content').textContent = getRandomSymbol();
                 reel2.querySelector('.reel-content').textContent = getRandomSymbol();
                 reel3.querySelector('.reel-content').textContent = getRandomSymbol();
-                spinCount++;
             }, 100);
 
+            // Determine if this is a jackpot spin
+            const isJackpotSpin = spinsUntilJackpot <= 0;
+
             // Stop reels one by one
-            const result1 = Math.random() < 0.33 ? jackpotSymbol : getRandomSymbol();
+            const result1 = isJackpotSpin ? jackpotSymbol : getRandomSymbol();
             setTimeout(() => {
                 reel1.classList.remove('spinning');
                 reel1.querySelector('.reel-content').textContent = result1;
             }, 1000);
 
-            const result2 = result1 === jackpotSymbol && Math.random() < 0.5 ? jackpotSymbol : getRandomSymbol();
+            const result2 = isJackpotSpin ? jackpotSymbol : getRandomSymbol();
             setTimeout(() => {
                 reel2.classList.remove('spinning');
                 reel2.querySelector('.reel-content').textContent = result2;
             }, 1500);
 
-            const result3 = result1 === jackpotSymbol && result2 === jackpotSymbol && Math.random() < 0.7 ? jackpotSymbol : getRandomSymbol();
+            const result3 = isJackpotSpin ? jackpotSymbol : getRandomSymbol();
             setTimeout(() => {
                 clearInterval(spinInterval);
                 reel3.classList.remove('spinning');
@@ -505,6 +623,7 @@
                 }
 
                 updateStats();
+                updateCountdown();
                 isSpinning = false;
                 spinButton.disabled = false;
             }, 2000);
@@ -512,12 +631,27 @@
 
         spinButton.addEventListener('click', spin);
         closeButton.addEventListener('click', hideJackpot);
+        skipButton.addEventListener('click', () => {
+            jackpotVideo.pause();
+            closeButton.classList.add('show');
+        });
 
         // Keyboard support
         document.addEventListener('keydown', (e) => {
             if(e.code === 'Space' && !isSpinning) {
                 e.preventDefault();
                 spin();
+            }
+        });
+
+        // Initialize countdown
+        updateCountdown();
+
+        // Handle video fullscreen changes
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                // User exited fullscreen
+                closeButton.classList.add('show');
             }
         });
     </script>
