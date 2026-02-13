@@ -194,27 +194,18 @@
             to { opacity: 1; }
         }
 
-        /* Jackpot countdown indicator */
-        .jackpot-countdown {
-            margin-top: 15px;
-            font-size: 1.1em;
-            color: #ffff00;
-            text-shadow: 0 0 10px #ffff00;
-            font-weight: bold;
-        }
-
-        /* Fullscreen Jackpot overlay */
+        /* Jackpot fullscreen overlay */
         .jackpot-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.98);
+            background: #000;
             display: none;
             justify-content: center;
             align-items: center;
-            z-index: 10000;
+            z-index: 9999;
             animation: overlayFadeIn 0.5s;
         }
 
@@ -228,27 +219,26 @@
         }
 
         .jackpot-content {
-            text-align: center;
-            position: relative;
             width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative;
         }
 
         .jackpot-title {
-            font-size: 5em;
-            color: #00ffff;
-            text-shadow: 0 0 30px #00ffff, 0 0 60px #ff00ff;
-            margin-bottom: 30px;
-            animation: jackpotPulse 0.5s infinite alternate;
             position: absolute;
             top: 50px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10001;
+            font-size: 5em;
+            color: #00ffff;
+            text-shadow: 0 0 30px #00ffff, 0 0 60px #ff00ff;
+            z-index: 10000;
+            animation: jackpotPulse 0.5s infinite alternate;
+            pointer-events: none;
         }
 
         @keyframes jackpotPulse {
@@ -263,9 +253,8 @@
         }
 
         .video-container {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
+            width: 100%;
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -294,11 +283,6 @@
             box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
             transition: all 0.3s;
             z-index: 10001;
-            display: none;
-        }
-
-        .close-button.show {
-            display: block;
         }
 
         .close-button:hover {
@@ -308,11 +292,12 @@
 
         /* Confetti animation */
         .confetti {
-            position: absolute;
+            position: fixed;
             width: 10px;
             height: 10px;
             background: #00ffff;
-            animation: confettiFall 3s linear infinite;
+            animation: confettiFall 3s linear;
+            z-index: 10000;
         }
 
         @keyframes confettiFall {
@@ -349,41 +334,15 @@
             }
             
             .jackpot-title {
-                font-size: 2.5em;
-                top: 20px;
+                font-size: 3em;
+                top: 30px;
             }
 
             .close-button {
                 bottom: 30px;
-                padding: 15px 40px;
+                padding: 15px 35px;
                 font-size: 1.2em;
             }
-        }
-
-        /* Skip video button */
-        .skip-button {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid #00ffff;
-            padding: 10px 20px;
-            font-size: 1em;
-            color: #00ffff;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s;
-            z-index: 10001;
-            display: none;
-        }
-
-        .skip-button.show {
-            display: block;
-        }
-
-        .skip-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
         }
     </style>
 </head>
@@ -421,7 +380,6 @@
         </div>
 
         <div class="message" id="message">Press SPIN to test your luck!</div>
-        <div class="jackpot-countdown" id="countdown"></div>
 
         <div class="stats">
             <div class="stat-box">
@@ -442,10 +400,9 @@
     <div class="jackpot-overlay" id="jackpotOverlay">
         <div class="jackpot-content">
             <div class="jackpot-title">🎊 JACKPOT! 🎊</div>
-            <button class="skip-button" id="skipButton">Skip Video ⏭️</button>
             <div class="video-container">
                 <video id="jackpotVideo" controls>
-                    <source src="hahakari.mp4" type="video/mp4">
+                    <source src="hakari-video.mp4" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
             </div>
@@ -460,17 +417,15 @@
         let spins = 0;
         let jackpots = 0;
         let isSpinning = false;
-        let spinsUntilJackpot = 4; // Jackpot guaranteed after 4 spins
+        let spinsSinceLastJackpot = 0;
 
         const reel1 = document.getElementById('reel1');
         const reel2 = document.getElementById('reel2');
         const reel3 = document.getElementById('reel3');
         const spinButton = document.getElementById('spinButton');
         const message = document.getElementById('message');
-        const countdown = document.getElementById('countdown');
         const jackpotOverlay = document.getElementById('jackpotOverlay');
         const closeButton = document.getElementById('closeButton');
-        const skipButton = document.getElementById('skipButton');
         const jackpotVideo = document.getElementById('jackpotVideo');
 
         function getRandomSymbol() {
@@ -484,14 +439,6 @@
             document.getElementById('winRate').textContent = winRate + '%';
         }
 
-        function updateCountdown() {
-            if (spinsUntilJackpot > 0) {
-                countdown.textContent = `🎯 ${spinsUntilJackpot} spin${spinsUntilJackpot > 1 ? 's' : ''} until GUARANTEED JACKPOT!`;
-            } else {
-                countdown.textContent = '⚡ JACKPOT READY! ⚡';
-            }
-        }
-
         function createConfetti() {
             for(let i = 0; i < 100; i++) {
                 setTimeout(() => {
@@ -499,61 +446,62 @@
                     confetti.className = 'confetti';
                     confetti.style.left = Math.random() * 100 + '%';
                     confetti.style.top = -10 + 'px';
-                    confetti.style.background = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00'][Math.floor(Math.random() * 4)];
+                    confetti.style.width = (Math.random() * 10 + 5) + 'px';
+                    confetti.style.height = (Math.random() * 10 + 5) + 'px';
+                    confetti.style.background = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff0000'][Math.floor(Math.random() * 5)];
                     confetti.style.animationDelay = Math.random() * 0.5 + 's';
                     document.body.appendChild(confetti);
                     
                     setTimeout(() => confetti.remove(), 3000);
-                }, i * 15);
+                }, i * 20);
             }
         }
 
         function showJackpot() {
+            // Show overlay first
             jackpotOverlay.classList.add('active');
             createConfetti();
             
-            // Play video
+            // Reset and play video
             jackpotVideo.currentTime = 0;
             jackpotVideo.play().catch(err => {
-                console.log('Autoplay prevented:', err);
+                console.log('Autoplay prevented, user can click play');
             });
-
-            // Show skip button after 3 seconds
+            
+            // Request fullscreen on video element
             setTimeout(() => {
-                skipButton.classList.add('show');
-            }, 3000);
-
-            // Show close button when video ends
-            jackpotVideo.onended = () => {
-                closeButton.classList.add('show');
-            };
-
-            // Try to go fullscreen
-            if (jackpotVideo.requestFullscreen) {
-                jackpotVideo.requestFullscreen().catch(err => {
-                    console.log('Fullscreen not supported:', err);
-                });
-            } else if (jackpotVideo.webkitRequestFullscreen) {
-                jackpotVideo.webkitRequestFullscreen();
-            } else if (jackpotVideo.msRequestFullscreen) {
-                jackpotVideo.msRequestFullscreen();
-            }
+                if (jackpotVideo.requestFullscreen) {
+                    jackpotVideo.requestFullscreen().catch(err => {
+                        console.log('Fullscreen request failed:', err);
+                    });
+                } else if (jackpotVideo.webkitRequestFullscreen) {
+                    jackpotVideo.webkitRequestFullscreen();
+                } else if (jackpotVideo.mozRequestFullScreen) {
+                    jackpotVideo.mozRequestFullScreen();
+                } else if (jackpotVideo.msRequestFullscreen) {
+                    jackpotVideo.msRequestFullscreen();
+                }
+            }, 100);
         }
 
         function hideJackpot() {
             jackpotOverlay.classList.remove('active');
             jackpotVideo.pause();
-            closeButton.classList.remove('show');
-            skipButton.classList.remove('show');
+            jackpotVideo.currentTime = 0;
             
-            // Exit fullscreen if in fullscreen
-            if (document.fullscreenElement) {
-                document.exitFullscreen();
+            // Exit fullscreen if active
+            if (document.fullscreenElement || document.webkitFullscreenElement || 
+                document.mozFullScreenElement || document.msFullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
             }
-            
-            // Reset jackpot counter
-            spinsUntilJackpot = 4;
-            updateCountdown();
         }
 
         async function spin() {
@@ -562,7 +510,7 @@
             isSpinning = true;
             spinButton.disabled = true;
             spins++;
-            spinsUntilJackpot--;
+            spinsSinceLastJackpot++;
             message.textContent = 'Spinning...';
 
             // Add spinning class
@@ -577,53 +525,68 @@
                 reel3.querySelector('.reel-content').textContent = getRandomSymbol();
             }, 100);
 
-            // Determine if this is a jackpot spin
-            const isJackpotSpin = spinsUntilJackpot <= 0;
+            // Determine if this is a jackpot spin (every 4th spin)
+            const isJackpotSpin = spinsSinceLastJackpot >= 4;
 
             // Stop reels one by one
-            const result1 = isJackpotSpin ? jackpotSymbol : getRandomSymbol();
             setTimeout(() => {
                 reel1.classList.remove('spinning');
-                reel1.querySelector('.reel-content').textContent = result1;
+                if(isJackpotSpin) {
+                    reel1.querySelector('.reel-content').textContent = jackpotSymbol;
+                } else {
+                    const result1 = Math.random() < 0.3 ? jackpotSymbol : getRandomSymbol();
+                    reel1.querySelector('.reel-content').textContent = result1;
+                }
             }, 1000);
 
-            const result2 = isJackpotSpin ? jackpotSymbol : getRandomSymbol();
             setTimeout(() => {
                 reel2.classList.remove('spinning');
-                reel2.querySelector('.reel-content').textContent = result2;
+                if(isJackpotSpin) {
+                    reel2.querySelector('.reel-content').textContent = jackpotSymbol;
+                } else {
+                    const result2 = Math.random() < 0.3 ? jackpotSymbol : getRandomSymbol();
+                    reel2.querySelector('.reel-content').textContent = result2;
+                }
             }, 1500);
 
-            const result3 = isJackpotSpin ? jackpotSymbol : getRandomSymbol();
             setTimeout(() => {
                 clearInterval(spinInterval);
                 reel3.classList.remove('spinning');
-                reel3.querySelector('.reel-content').textContent = result3;
+                
+                if(isJackpotSpin) {
+                    reel3.querySelector('.reel-content').textContent = jackpotSymbol;
+                } else {
+                    const result3 = Math.random() < 0.3 ? jackpotSymbol : getRandomSymbol();
+                    reel3.querySelector('.reel-content').textContent = result3;
+                }
+
+                const result1 = reel1.querySelector('.reel-content').textContent;
+                const result2 = reel2.querySelector('.reel-content').textContent;
+                const result3 = reel3.querySelector('.reel-content').textContent;
 
                 // Check for win
-                if(result1 === result2 && result2 === result3) {
-                    if(result1 === jackpotSymbol) {
-                        jackpots++;
-                        message.textContent = '🎊 JACKPOT!!! DOMAIN EXPANSION ACTIVATED! 🎊';
-                        reel1.classList.add('win-animation');
-                        reel2.classList.add('win-animation');
-                        reel3.classList.add('win-animation');
-                        setTimeout(() => {
-                            reel1.classList.remove('win-animation');
-                            reel2.classList.remove('win-animation');
-                            reel3.classList.remove('win-animation');
-                        }, 500);
-                        setTimeout(() => showJackpot(), 500);
-                    } else {
-                        message.textContent = '✨ Nice! Three ' + result1 + '!';
-                    }
+                if(isJackpotSpin && result1 === jackpotSymbol && result2 === jackpotSymbol && result3 === jackpotSymbol) {
+                    jackpots++;
+                    spinsSinceLastJackpot = 0;
+                    message.textContent = '🎊 JACKPOT!!! DOMAIN EXPANSION ACTIVATED! 🎊';
+                    reel1.classList.add('win-animation');
+                    reel2.classList.add('win-animation');
+                    reel3.classList.add('win-animation');
+                    setTimeout(() => {
+                        reel1.classList.remove('win-animation');
+                        reel2.classList.remove('win-animation');
+                        reel3.classList.remove('win-animation');
+                    }, 500);
+                    setTimeout(() => showJackpot(), 500);
+                } else if(result1 === result2 && result2 === result3) {
+                    message.textContent = '✨ Nice! Three ' + result1 + '!';
                 } else if(result1 === result2 || result2 === result3 || result1 === result3) {
-                    message.textContent = '👍 Two matching! Almost there!';
+                    message.textContent = '👍 Two matching! Keep going!';
                 } else {
-                    message.textContent = 'Try again! The house always wins... or does it?';
+                    message.textContent = 'Try again! Keep spinning...';
                 }
 
                 updateStats();
-                updateCountdown();
                 isSpinning = false;
                 spinButton.disabled = false;
             }, 2000);
@@ -631,27 +594,15 @@
 
         spinButton.addEventListener('click', spin);
         closeButton.addEventListener('click', hideJackpot);
-        skipButton.addEventListener('click', () => {
-            jackpotVideo.pause();
-            closeButton.classList.add('show');
-        });
+
+        // Also close on video end
+        jackpotVideo.addEventListener('ended', hideJackpot);
 
         // Keyboard support
         document.addEventListener('keydown', (e) => {
             if(e.code === 'Space' && !isSpinning) {
                 e.preventDefault();
                 spin();
-            }
-        });
-
-        // Initialize countdown
-        updateCountdown();
-
-        // Handle video fullscreen changes
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
-                // User exited fullscreen
-                closeButton.classList.add('show');
             }
         });
     </script>
